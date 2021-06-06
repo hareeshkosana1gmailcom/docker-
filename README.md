@@ -1,404 +1,552 @@
-# docker- Kubernetes
-Intro to app
+Summary of container & orchestration
 
 
-app deploy history
+cleaning up namespace data
+❯ kubectl config get-contexts
+CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
+*         kubernetes-admin@kubernetes   kubernetes   kubernetes-admin   ashu-jci
+          minikube                      minikube     minikube           default
+❯ kubectl  get  po
+NAME              READY   STATUS    RESTARTS   AGE
+ashurc123-4mh6x   1/1     Running   1          17h
+ashurc123-kcchh   1/1     Running   1          17h
+ashurc123-qwf29   1/1     Running   1          17h
+❯ kubectl  get  all
+NAME                  READY   STATUS    RESTARTS   AGE
+pod/ashurc123-4mh6x   1/1     Running   1          17h
+pod/ashurc123-kcchh   1/1     Running   1          17h
+pod/ashurc123-qwf29   1/1     Running   1          17h
+
+NAME                              DESIRED   CURRENT   READY   AGE
+replicationcontroller/ashurc123   3         3         3       18h
+
+NAME          TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
+service/ss1   NodePort   10.96.223.6   <none>        1234:31669/TCP   17h
+❯ kubectl  delete all --all
+pod "ashurc123-4mh6x" deleted
+pod "ashurc123-kcchh" deleted
+pod "ashurc123-qwf29" deleted
+replicationcontroller "ashurc123" deleted
+service "ss1" deleted
 
 
-hypervisor based OS problems
+Getting started with Deployment
+creating yaml file
+❯ kubectl  create  deployment   ashuwebapp  --image=dockerashu/httpd:jcimultiappv1 --dry-run=client -o yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ashuwebapp
+  name: ashuwebapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ashuwebapp
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ashuwebapp
+    spec:
+      containers:
+      - image: dockerashu/httpd:jcimultiappv1
+        name: httpd
+        resources: {}
+status: {}
+❯ kubectl  create  deployment   ashuwebapp  --image=dockerashu/httpd:jcimultiappv1 --dry-run=client -o yaml  >ashudep.yml
 
-
-list of CRE
-
-
-Introduction to Docker
-
-
-DOcker Desktop introduction
-
-
-Docker architecture
-
-
-checking docker client side
-❯ docker  version
-Client:
- Cloud integration: 1.0.14
- Version:           20.10.6
- API version:       1.41
- Go version:        go1.16.3
- Git commit:        370c289
- Built:             Fri Apr  9 22:46:57 2021
- OS/Arch:           darwin/amd64
- Context:           default
- Experimental:      true
-
-Server: Docker Engine - Community
- Engine:
-  Version:          20.10.6
-  API version:      1.41 (minimum version 1.12)
-  Go version:       go1.13.15
-
-
-Installing docker Ce --Engine on Linux
-EngineDOcker
-
-Installing in Linux vm (amazon linux)
-[root@ip-172-31-47-111 ~]# yum  install  docker  -y
-Failed to set locale, defaulting to C
-Loaded plugins: extras_suggestions, langpacks, priorities, update-motd
-amzn2-core                                                                                | 3.7 kB  00:00:00     
-Resolving Dependencies
---> Running transaction check
----> Package docker.x86_64 0:20.10.4-1.amzn2 will be installed
---> Processing Dependency: runc >= 1.0.0 for package: docker-20.10.4-1.amzn2.x86_64
---> Processing Dependency: lib
-
-COnfiguring user on docker engine
-[root@ip-172-31-47-111 ~]# usermod  -aG  docker  test 
-[root@ip-172-31-47-111 ~]# 
-[root@ip-172-31-47-111 ~]# 
-[root@ip-172-31-47-111 ~]# systemctl start  docker 
-[root@ip-172-31-47-111 ~]# systemctl enable   docker 
-Created symlink from /etc/systemd/system/multi-user.target.wants/docker.service to /usr/lib/systemd/system/docker.service.
-[root@ip-172-31-47-111 ~]# systemctl status  docker 
-● docker.service - Docker Application Container Engine
-   Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; vendor preset: disabled)
-   Active: active (running) since Mon 2021-05-31 06:15:28 UTC; 10s ago
-     Docs: https://docs.docker.com
- Main PID: 3725 (dockerd)
-   CGroup: /system.slice/docker.service
-           └─3725 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock --default-ulimit nofile=1024:4096
-
-May 31 06:15:27 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:27.561750924Z" level=info msg="scheme...grpc
-May 31 06:15:27 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:27.561765235Z" level=info msg="ccReso...grpc
-May 31 06:15:27 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:27.561772885Z" level=info msg="Client...grpc
-May 31 06:15:27 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:27.630077738Z" level=info msg="Loadin...rt."
-May 31 06:15:27 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:27.885151055Z" level=info msg="Defaul...ess"
-May 31 06:15:28 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:28.062152573Z" level=info msg="Loadin...ne."
-May 31 06:15:28 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:28.166060958Z" level=info msg="Docker...10.4
-May 31 06:15:28 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:28.166836232Z" level=info msg="Daemon...ion"
-May 31 06:15:28 ip-172-31-47-111.ec2.internal systemd[1]: Started Docker Application Container Engine.
-May 31 06:15:28 ip-172-31-47-111.ec2.internal dockerd[3725]: time="2021-05-31T06:15:28.188688545Z" level=info msg="API li...ock"
-Hint: Some lines were ellipsized, use -l to show in full.
-
-
-Now time for connecting Docker client to Docker engine using secure ssh keybased connection
-Mac client generating key pair
-❯ ssh-keygen
-Generating public/private rsa key pair.
-Enter file in which to save the key (/Users/fire/.ssh/id_rsa): 
-/Users/fire/.ssh/id_rsa already exists.
-Overwrite (y/n)? y
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Your identification has been saved in /Users/fire/.ssh/id_rsa.
-Your public key has been saved in /Users/fire/.ssh/id_rsa.pub.
-The key fingerprint is:
-SHA256:hdIEmN/LOiYFsXFB3gL6AxJyB1yTBXJRTenMqkqglhY fire@ashutoshhs-MacBook-Air.local
-The key's randomart image is:
-+---[RSA 3072]----+
-|o.+oOX*=o.       |
-|.o.=*+.+o.       |
-|. o  *+=+ .      |
-| . oo .o=.       |
-|.E  o. oS.       |
-|..o  .o o        |
-|.+.  o .         |
-|o.  o +          |
-|  .. o .         |
-+----[SHA256]-----+
-
-same method in windows 10 using gitbash
-Sending public key to test user in remote linux
- ssh-copy-id   test@54.224.54.156
-/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/Users/fire/.ssh/id_rsa.pub"
-/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
-/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
-test@54.224.54.156's password: 
-/etc/profile.d/lang.sh: line 19: warning: setlocale: LC_CTYPE: cannot change locale (UTF-8): No such file or directory
-
-Number of key(s) added:        1
-
-Now try logging into the machine, with:   "ssh 'test@54.224.54.156'"
-and check to make sure that only the key(s) you wanted were added.
-
-
-Now testing password less connection from client machine
-❯ ssh  test@54.224.54.156
-Last login: Mon May 31 05:57:21 2021 from 103.133.168.14
-
-       __|  __|_  )
-       _|  (     /   Amazon Linux 2 AMI
-      ___|\___|___|
-
-https://aws.amazon.com/amazon-linux-2/
--bash: warning: setlocale: LC_CTYPE: cannot change locale (UTF-8): No such file or directory
-[test@ip-172-31-47-111 ~]$ 
-[test@ip-172-31-47-111 ~]$ 
-[test@ip-172-31-47-111 ~]$ exit
-logout
-Connection to 54.224.54.156 closed.
-
-creating context for remote docker engine
-❯ docker  context   ls
-NAME                TYPE                DESCRIPTION                               DOCKER ENDPOINT               KUBERNETES ENDPOINT                         ORCHESTRATOR
-default *           moby                Current DOCKER_HOST based configuration   unix:///var/run/docker.sock   https://3.230.225.157:6443 (ashuproject1)   swarm
-❯ 
-❯ docker  context  create  JciRDE   --docker  host="ssh://test@54.224.54.156"
-JciRDE
-Successfully created context "JciRDE"
-❯ docker  context   ls
-NAME                TYPE                DESCRIPTION                               DOCKER ENDPOINT               KUBERNETES ENDPOINT                         ORCHESTRATOR
-JciRDE              moby                                                          ssh://test@54.224.54.156                                                  
-default *           moby                Current DOCKER_HOST based configuration   unix:///var/run/docker.sock   https://3.230.225.157:6443 (ashuproject1)   swarm
-
-
-Switching to REmote docker engine
-❯ docker  context   use  JciRDE
-JciRDE
-❯ docker  context   ls
-NAME                TYPE                DESCRIPTION                               DOCKER ENDPOINT               KUBERNETES ENDPOINT                         ORCHESTRATOR
-JciRDE *            moby                                                          ssh://test@34.237.219.131                                                 
-default             moby                Current DOCKER_HOST based configuration   unix:///var/run/docker.sock   https://3.230.225.157:6443 (ashuproject1)   swarm
-
-
-creating tcp based context.
-10051  docker  context create   newjci  --docker  host="tcp://34.237.219.131:2375"
-10052  docker  context  use  newjci  
-10053  docker  context  ls
-10054  docker  version 
-
-FInal overview of docker ce
-
-
-Docker operations
-images checking
-❯ docker  images
-REPOSITORY   TAG       IMAGE ID   CREATED   SIZE
-
-searching images on docker hub
-❯ docker  search   python
-NAME                             DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
-python                           Python is an interpreted, interactive, objec…   6190      [OK]       
-django                           Django is a free web application framework, …   1077      [OK]       
-pypy                             PyPy is a fast, compliant alternative implem…   275       [OK]       
-nikolaik/python-nodejs           Python with Node.js                             74                   [OK]
-joyzoursky/python-chromedriver   Python with Chromedriver, for running automa…   58                   [OK]
-arm32v7/python                   Python is an interpreted, interactive, objec…   57                   
-circleci/python                  Python is an interpreted, interactive, objec…   43                   
-centos/python-35-centos7         Platform for building and running Python 3.5…   39                   
-hylang                           Hy is a Lisp dialect that translates express…   32        [OK]       
-centos/python-36-centos7    
-
-Downloading docker images
-❯ docker  pull  centos
-Using default tag: latest
-latest: Pulling from library/centos
-7a0437f04f83: Pull complete 
-Digest: sha256:5528e8b1b1719d34604c87e11dcd1c0a20bedf46e83b5632cdeac91b8c04efc1
-Status: Downloaded newer image for centos:latest
-docker.io/library/centos:latest
-❯ docker  images
-REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
-python       latest    5b3b4504ff1f   6 days ago     886MB
-ubuntu       18.04     81bcf752ac3d   11 days ago    63.1MB
-centos       latest    300e315adb2f   5 months ago   209MB
-
-Docker images registry options
-
-
-creating first container with ping process
-❯ docker  run  --name  ashuc1    alpine:latest   ping  127.0.0.1
-PING 127.0.0.1 (127.0.0.1): 56 data bytes
-64 bytes from 127.0.0.1: seq=0 ttl=255 time=0.033 ms
-64 bytes from 127.0.0.1: seq=1 ttl=255 time=0.040 ms
-64 bytes from 127.0.0.1: seq=2 ttl=255 time=0.073 ms
-64 bytes from 127.0.0.1: seq=3 ttl=255 time=0.048 ms
-64 bytes from 127.0.0.1: seq=4 ttl=255 time=0.042 ms
-64 bytes from 127.0.0.1: seq=5 ttl=255 time=0.051 ms
-64 bytes from 127.0.0.1: seq=6 ttl=255 time=0.047 ms
-64 bytes from 127.0.0.1: seq=7 ttl=255 time=0.046 ms
-64 bytes from 127.0.0.1: seq=8 ttl=255 time=0.043 ms
-64 bytes from 127.0.0.1: seq=9 ttl=255 time=0.044 ms
-^C
---- 127.0.0.1 ping statistics ---
-10 packets transmitted, 10 packets received, 0% packet loss
-round-trip min/avg/max = 0.033/0.046/0.073 ms
-
-list of running containers
-❯ docker  ps
-CONTAINER ID   IMAGE           COMMAND            CREATED              STATUS              PORTS     NAMES
-30b58fd66f7c   alpine:latest   "ping 127.0.0.1"   55 seconds ago       Up 51 seconds                 shalomc1
-27c36187e516   alpine:latest   "ping 127.0.0.1"   About a minute ago   Up About a minute             sumitc1
-f47d536de69c   ubuntu:18.04    "/bin/bash"        18 minutes ago       Up 8 minutes                  boorish_grommet
-
-
-checking output of a running container
-❯ docker  logs   ashuc2
-PING fb.com (157.240.229.35): 56 data bytes
-64 bytes from 157.240.229.35: seq=0 ttl=48 time=1.805 ms
-64 bytes from 157.240.229.35: seq=1 ttl=48 time=1.154 ms
-64 bytes from 157.240.229.35: seq=2 ttl=48 time=1.155 ms
-64 bytes from 157.240.229.35: seq=3 ttl=48 time=1.298 ms
-64 bytes from 157.240.229.35: seq=4 ttl=48 time=1.195 ms
-64 bytes from 157.240.229.35: seq=5 ttl=48 time=1.188 ms
-64 bytes from 157.240.229.35: seq=6 ttl=48 time=1.167 ms
-64 bytes from 157.240.229.35: seq=7 ttl=48 time=1.173 ms
-64 bytes from 157.240.229.35: seq=8 ttl=48 time=1.164 ms
-64 bytes from 157.240.229.35: seq=9 ttl=
-
-stopping a running container
-❯ docker  stop  ashuc2
-ashuc2
-
-starting a stopped container
- docker  start  ashuc2
-starting a child process in a running container
-❯ docker  exec  -d  ashuc2  ping google.com
-❯ docker  top  ashuc2
-UID                 PID                 PPID                C                   STIME               TTY                 TIME                CMD
-root                18458               18423               0                   07:22               ?                   00:00:00            ping fb.com
-root                31064               18423               1                   07:25               ?                   00:00:00            ping google.com
-
-COntainer understanding more deeploy
-it has its own file system
-❯ docker  exec   -i -t  ashuc2   sh
-/ # 
-/ # ls  /
-bin    dev    etc    home   lib    media  mnt    opt    proc   root   run    sbin   srv    sys    tmp    usr    var
-/ # 
-
-it has its own process
-/ # ps  -e
-PID   USER     TIME  COMMAND
-    1 root      0:00 ping fb.com
-    8 root      0:00 ping google.com
-   14 root      0:00 sh
-   21 root      0:00 ps -e
-   
-each container will have its own IP
-/ # ifconfig 
-eth0      Link encap:Ethernet  HWaddr 02:42:AC:11:00:06  
-         inet addr:172.17.0.6  Bcast:172.17.255.255  Mask:255.255.0.0
-         UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-         RX packets:1085 errors:0 dropped:0 overruns:0 frame:0
-         TX packets:1067 errors:0 dropped:0 overruns:0 carrier:0
-         collisions:0 txqueuelen:0 
-         RX bytes:103426 (101.0 KiB)  TX bytes:102374 (99.9 KiB)
-
-lo        Link encap:Local Loopback  
-         inet addr:127.0.0.1  Mask:255.0.0.0
-         UP LOOPBACK RUNNING  MTU:65536  Metric:1
-         RX packets:0 errors:0 dropped:0 overruns:0 frame:0
-         TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-         collisions:0 txqueuelen:1000 
-         RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
-
-
-history
-❯ docker  exec   -i -t  ashuc2   sh
-/ # 
-/ # ls  /
-bin    dev    etc    home   lib    media  mnt    opt    proc   root   run    sbin   srv    sys    tmp    usr    var
-/ # ps  -e
-PID   USER     TIME  COMMAND
-    1 root      0:00 ping fb.com
-    8 root      0:00 ping google.com
-   14 root      0:00 sh
-   21 root      0:00 ps -e
-/ # ifconfig 
-eth0      Link encap:Ethernet  HWaddr 02:42:AC:11:00:06  
-          inet addr:172.17.0.6  Bcast:172.17.255.255  Mask:255.255.0.0
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:1085 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:1067 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0 
-          RX bytes:103426 (101.0 KiB)  TX bytes:102374 (99.9 KiB)
-
-lo        Link encap:Local Loopback  
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          UP LOOPBACK RUNNING  MTU:65536  Metric:1
-          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
-
-/ # exit
-
-
-Build new docker images
-
-
-Building docker images
-❯ cd  pythoncode
+Deployment deploy
 ❯ ls
-Dockerfile hello.py
-❯ docker  build  -t   python:ashuv1  .
-Sending build context to Docker daemon  3.584kB
-Step 1/6 : FROM centos
-latest: Pulling from library/centos
-7a0437f04f83: Pull complete 
-Digest: sha256:5528e8b1b1719d34604c87e11dcd1c0a20bedf46e83b5632cdeac91b8c04efc1
-Status: Downloaded newer image for centos:latest
- ---> 300e315adb2f
-Step 2/6 : MAINTAINER  ashutoshh@linux.com
- ---> Running in fe7d11af5552
-Removing intermediate container f
+aa.json          ashudep.yml      autopod.yaml     customerapp2.yml mypod.yml
+ashu-rc1.yaml    ashupod1.yaml    customerapp1.yml deploy.yml       svc1.yaml
+❯ kubectl  get  deployments
+No resources found in ashu-jci namespace.
+❯ kubectl  get  deploy
+No resources found in ashu-jci namespace.
+❯ kubectl  apply -f  ashudep.yml
+deployment.apps/ashuwebapp created
+❯ kubectl  get  deploy
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+ashuwebapp   1/1     1            1           5s
+❯ kubectl  get  rs
+NAME                    DESIRED   CURRENT   READY   AGE
+ashuwebapp-5cfc9f66c9   1         1         1       10s
+❯ kubectl  get  po
+NAME                          READY   STATUS    RESTARTS   AGE
+ashuwebapp-5cfc9f66c9-x45xp   1/1     Running   0          13s
 
-creating container
-❯ docker  run  -d -it   --name ashuc111  python:ashuv1
-089bec16bea33b436843b8dbacf7da123369b02d24e17511ec43aa551a6084aa
-❯ docker  ps
-CONTAINER ID   IMAGE           COMMAND                  CREATED          STATUS          PORTS     NAMES
-089bec16bea3   python:ashuv1   "python3 /mycode/hel…"   26 seconds ago   Up 23 seconds             ashuc111
+rechecking
+❯ kubectl  get  deploy
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+ashuwebapp   1/1     1            1           4m27s
+❯ kubectl  get   rs
+NAME                    DESIRED   CURRENT   READY   AGE
+ashuwebapp-5cfc9f66c9   1         1         1       4m42s
+❯ kubectl  get   po
+NAME                          READY   STATUS    RESTARTS   AGE
+ashuwebapp-5cfc9f66c9-x45xp   1/1     Running   0          4m48s
+❯ kubectl  get   po -o wide
+NAME                          READY   STATUS    RESTARTS   AGE     IP               NODE                            NOMINATED NODE   READINESS GATES
+ashuwebapp-5cfc9f66c9-x45xp   1/1     Running   0          4m51s   192.168.249.75   ip-172-31-41-131.ec2.internal   <none>           <none>
+❯ kubectl get  no
+NAME                            STATUS   ROLES                  AGE   VERSION
+ip-172-31-34-76.ec2.internal    Ready    <none>                 42h   v1.21.1
+ip-172-31-37-20.ec2.internal    Ready    <none>                 42h   v1.21.1
+ip-172-31-41-131.ec2.internal   Ready    <none>                 42h   v1.21.1
+ip-172-31-41-71.ec2.internal    Ready    control-plane,master   42h   v1.21.1
 
-checking output of running container
-docker logs -f  ashuc111
 
-Docker image transfer.
+service creation tips
 
 
-Docker image name reality
+creating expose based service
+kubectl  expose deployment  ashuwebapp  --type NodePort --port 80 --namespace=ashu-jci  --dry-run=client -o yaml
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    x: ashuwebapp
+  name: ashuwebapp
+  namespace: ashu-jci
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: ashuwebapp
+  type: NodePort
+status:
+  loadBalancer: {}
+
+redeploy yaml
+❯ kubectl  apply -f  ashudep.yml
+deployment.apps/ashuwebapp configured
+service/ashuwebapp created
+❯ kubectl  get  svc
+NAME         TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+ashuwebapp   NodePort   10.101.75.228   <none>        80:32312/TCP   8s
+
+checking details of deployment like revision number
+❯ kubectl  get  deploy
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+ashuwebapp   1/1     1            1           27m
+❯ kubectl  describe  deploy ashuwebapp
+Name:                   ashuwebapp
+Namespace:              ashu-jci
+CreationTimestamp:      Thu, 03 Jun 2021 09:39:25 +0530
+Labels:                 x=ashuwebapp
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=ashuwebapp
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=ashuwebapp
+  Containers:
+   httpd:
+    Image:      dockerashu/httpd:jcimultiappv1
+    Port:       <none>
+    Host Port:  <none>
+    Environment:
+
+scaling pod
+❯ kubectl  get  deploy
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+ashuwebapp   1/1     1            1           30m
+❯ kubectl   scale deployment  ashuwebapp  --replicas=3
+deployment.apps/ashuwebapp scaled
+❯ kubectl  get  deploy
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+ashuwebapp   3/3     3            3           30m
+❯ kubectl  get  po
+NAME                          READY   STATUS    RESTARTS   AGE
+ashuwebapp-5cfc9f66c9-n79kk   1/1     Running   0          8s
+ashuwebapp-5cfc9f66c9-x45xp   1/1     Running   0          30m
+ashuwebapp-5cfc9f66c9-zjgm6   1/1     Running   0          8s
+
+updating image in existing deployment
+ kubectl  set  image  deployment   ashuwebapp  httpd=dockerashu/httpd:jcimultiappv2
+deployment.apps/ashuwebapp image updated
+
+deployment history
+0106  kubectl  describe deploy ashuwebapp  
+10107  history
+10108  kubectl  describe deploy ashuwebapp  
+10109* kubectl  set  image  deployment   ashuwebapp  httpd=dockerashu/httpd:jcimultiappv2 
+10110  kubectl  get  deploy 
+10111  kubectl  get  po
+10112  kubectl  describe deploy ashuwebapp  
+
+History and current revesion number
+❯ kubectl  rollout history deployment   ashuwebapp
+deployment.apps/ashuwebapp 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+❯ kubectl  describe deploy ashuwebapp
+Name:                   ashuwebapp
+Namespace:              ashu-jci
+CreationTimestamp:      Thu, 03 Jun 2021 09:39:25 +0530
+Labels:                 x=ashuwebapp
+Annotations:            deployment.kubernetes.io/revision: 2
+Selector:               app=ashuwebapp
+
+rolling back by using revision number --
+Note: you can also set image to roll back
+❯ kubectl  rollout undo deployment   ashuwebapp --to-revision=1
+deployment.apps/ashuwebapp rolled back
+❯ kubectl  get  po
+NAME                          READY   STATUS        RESTARTS   AGE
+ashuwebapp-5cfc9f66c9-p65zx   1/1     Running       0          17s
+ashuwebapp-5cfc9f66c9-r4ndb   1/1     Running       0          20s
+ashuwebapp-5cfc9f66c9-rxq8b   1/1     Running       0          22s
+ashuwebapp-75dcd5c7b6-h2g7b   1/1     Terminating   0          5m29s
+ashuwebapp-75dcd5c7b6-lbdq6   1/1     Terminating   0          5m27s
+ashuwebapp-75dcd5c7b6-vvpgc   1/1     Terminating   0          5m25s
+
+Storage in k8s
 
 
-Pushing image to docker hub
-10174  docker  tag   python:ashuv1   dockerashu/python:ashuv1 
+k8s volume concepts
+
+
+volume docs link
+link
+
+EmptyDir volume type
+
+
+creating pod
+
+kubectl   run  emppod  --image=alpine --namespace ashu-jci  --dry-run=client -o yaml  >empvol.yml
+replacing parent process of container in k8s
+
+
+deploying pod
+❯ kubectl  apply -f empvol.yml
+pod/emppod created
+❯ kubectl  get  po
+NAME     READY   STATUS    RESTARTS   AGE
+emppod   1/1     Running   0          9s
+
+checking volume mounts
+❯ kubectl describe pod  emppod
+Name:         emppod
+Namespace:    ashu-jci
+Priority:     0
+Node:         ip-172-31-41-131.ec2.internal/172.31.41.131
+Start Time:   Thu, 03 Jun 2021 12:25:24 +0530
+Labels:       run=emppod
+Annotations:  cni.projectcalico.org/podIP: 192.168.249.105/32
+Status:       Running
+IP:           192.168.249.105
+IPs:
+  IP:  192.168.249.105
+Containers:
+  emppod:
+    Container ID:  docker://790ecc0d7f53591a6ed421cb0752128391ad4a93f5352eb65964fca31e01fd17
+    Image:         alpine
+    Image ID:      docker-pullable://alpine@sha256:69e70a79f2d41ab5d637de98c1e0b055206ba40a8145e7bddb55ccc04e13cf8f
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      /bin/sh
+      -c
+      while true;do echo hii >>/mnt/jci/a.txt;sleep 5;done
+    State:          Running
+      Started:      Thu, 03 Jun 2021 12:25:26 +0530
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /mnt/jci from ashuvol1 (rw)
+      /var/run/secrets/kubernetes.io/servicea
+      
+checking pods
+10137  kubectl  exec  -it  emppod  -- sh 
+❯ kubectl  exec  -it  emppod  -- sh
+/ # cd /mnt/jci/
+/mnt/jci # ls
+a.txt
+/mnt/jci # exit
+
+Pod with more than one container -- helper / sidecar container
+
+
+adding. sidecar container
+❯ kubectl  get  po
+NAME     READY   STATUS    RESTARTS   AGE
+emppod   1/1     Running   0          24m
+❯ kubectl  apply -f empvol.yml
+The Pod "emppod" is invalid: spec.containers: Forbidden: pod updates may not add or remove containers
+❯ kubectl  replace -f  empvol.yml --force
+pod "emppod" deleted
+pod/emppod replaced
+
+accessing two container inside a single pod
+❯ kubectl  get  po
+NAME     READY   STATUS    RESTARTS   AGE
+emppod   2/2     Running   0          93s
+❯ kubectl exec -it  emppod  -c  ashuc1  --  bash
+root@emppod:/# cd /usr/share/nginx/html/
+root@emppod:/usr/share/nginx/html# ls
+a.txt
+root@emppod:/usr/share/nginx/html# exit
+exit
+❯ kubectl exec -it  emppod  -c  emppod  --  sh
+/ # cd /mnt/jci/
+/mnt/jci # ls
+a.txt
+/mnt/jci # exit
+
+creating serivce
+ kubectl  expose pod  emppod  --type NodePort --port 80 --target-port 80 --name svcc1
+service/svcc1 exposed
+❯ kubectl  get  svc
+NAME    TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+svcc1   NodePort   10.105.183.228   <none>        80:32584/TCP   4s
+
+Host Path volume type
+
+
+deploy
+❯ kubectl  apply -f  hostp.yml
+pod/hostpod1 created
+❯ kubectl  get  po
+NAME       READY   STATUS    RESTARTS   AGE
+hostpod1   1/1     Running   0          3s
+❯ kubectl  exec -it  hostpdo1  -- sh
+Error from server (NotFound): pods "hostpdo1" not found
+❯ kubectl  exec -it  hostpod1  -- sh
+/ # cd  /myhostetc/
+/myhostetc # ls
+DIR_COLORS               default                  issue.net                passwd                   selinux
+DIR_COLORS.256color      depmod.d                 krb5.conf                passwd-                  services
+DIR_COLORS.lightbgcolor  dhcp                     krb5.conf.d              pkcs11                   sestatus.conf
+GREP_COLORS              docker                   kubernetes               pki                      setuptool.d
+GeoIP.conf               docker-runtimes.d        ld.so.cache              plymouth                 shadow
+GeoIP.conf.default       dracut.conf              ld.so.conf               pm                       shadow-
+NetworkManager           dracut.conf.d            ld.so.conf.d             popt.d                   shells
+X11                      e2fsck.conf              libaudit.conf            postfix                  skel
+acpi                     environment  
+
+PV & PVC -- with demo
+
+
+creating pv
+❯ kubectl  get  pv
+NAME             CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM                     STORAGECLASS   REASON   AGE
+ashupv-123       10Gi       RWO            Retain           Available                             fast                    16m
+asifpv-123       5Gi        RWX            Retain           Bound       asif/asifpvc              fast                    10m
+hppv-123         10Gi       RWO            Retain           Available                             fast                    8m14s
+kiranpv          10Gi       RWX            Retain           Available                             veryfast                79s
+prachipv-1       5Gi        RWO            Retain           Bound       prachi-jci/prachipvc      fast                    15m
+prashantpv-123   7Gi        RWX            Retain           Bound       priyankajci/priyankapvc   fast                    11m
+priyankapv-123   3Gi        RWX            Retain           Available                             fast                    14m
+rajeshpod-day2   5Gi        RWO            Retain           Available                             fast                    11m
+rajeshpv         5Gi        RWO            Retain           Bound       rajeshns/rajeshpvc        fast                    8m57s
+rajkpv-1010      7Gi        ROX            Retain           Available                             fast                    12m
+sagarpv-123      10Gi       RWX            Retain           Bound       ashu-jci/ashupvc          fast                    11m
+saket12          8Gi        RWX            Retain           Available                             fast                    12m
+shalompv         10Gi       RWO            Retain           Available                             fast                    16m
+tape123          7Gi        RWX            Retain           Bound       jci-tapender/tapepvc      fast                    13m
+tarupv-123       10Gi       RWO            Retain           Bound       harendra/hppvc            fast                    9m31s
+vipinpv-123      10Gi       RWO            Retain           Available                     
+
+claiming pv using pvc
+❯ kubectl  get  pvc
+NAME      STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+ashupvc   Bound    sagarpv-123   10Gi       RWX            fast           2m24s
+
+Deploy yaml of mysql DB
+
+
+ kubectl  create   deployment  ashudb  --image=mysql:5.6  --dry-run=client -o yaml   >ashudb.yaml
+ 
+INtroduction to secret
+
+
+creating secret for db password storage purpose
+❯ kubectl  create  secret   generic   ashudbsec   --from-literal  passkey1=JciDb088  --namespace ashu-jci
+secret/ashudbsec created
+❯ kubectl  get  secret
+NAME                  TYPE                                  DATA   AGE
+ashudbsec             Opaque                                1      8s
+default-token-gxn2k   kubernetes.io/service-account-token   3      25h
+
+deploying db deployment file
+❯ kubectl apply -f  ashudb.yaml --dry-run=client
+deployment.apps/ashudb created (dry run)
+❯ kubectl apply -f  ashudb.yaml
+deployment.apps/ashudb created
+❯ kubectl  get deploy
+NAME     READY   UP-TO-DATE   AVAILABLE   AGE
+ashudb   1/1     1            1           8s
+
+
+Creting clusterIP type service to DB pod
+❯ kubectl   get  deploy
+NAME     READY   UP-TO-DATE   AVAILABLE   AGE
+ashudb   1/1     1            1           7m32s
+❯ kubectl  expose  deploy ashudb  --type ClusterIP  --port 3306  --dry-run=client -o yaml
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ashudb
+  name: ashudb
+spec:
+  ports:
+  - port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector:
+    app: ashudb
+  type: ClusterIP
+status:
+  loadBalancer: {}
+❯ kubectl  expose  deploy ashudb  --type ClusterIP  --port 3306  --dry-run=client -o yaml   >dbsvc.yaml
+❯ kubectl  expose  deploy ashudb  --type ClusterIP  --port 3306  --namespace ashu-jci --dry-run=client -o yaml   >dbsvc.yaml
+
+Deploy service
+ kubectl  apply -f  dbsvc.yaml
+service/ashudb created
+
+
+summary of mysql DB deployment
+❯ kubectl get  pvc
+NAME      STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+ashupvc   Bound    sagarpv-123   10Gi       RWX            fast           44m
+❯ kubectl get  secret
+NAME                  TYPE                                  DATA   AGE
+ashudbsec             Opaque                                1      17m
+default-token-gxn2k   kubernetes.io/service-account-token   3      25h
+❯ kubectl get  deploy
+NAME     READY   UP-TO-DATE   AVAILABLE   AGE
+ashudb   1/1     1            1           11m
+❯ kubectl get  po
+NAME                     READY   STATUS    RESTARTS   AGE
+ashudb-778b46674-jxw4r   1/1     Running   0          11m
+❯ kubectl get  svc
+NAME     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+ashudb   ClusterIP   10.103.161.14   <none>        3306/TCP   56s
+
+creting yaml of webapp
+kubectl  create  deployment  ashuwebapp1  --image=wordpress:4.8-apache --namespace ashu-jci  --dry-run=client -o yaml  >webapp.yaml
+
+creating service
+❯ kubectl  get  deploy
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+ashudb        1/1     1            1           44m
+ashuwebapp1   1/1     1            1           79s
+❯ kubectl  get  po
+NAME                           READY   STATUS    RESTARTS   AGE
+ashudb-778b46674-jxw4r         1/1     Running   0          44m
+ashuwebapp1-66c9547dc5-72v4f   1/1     Running   0          84s
+❯ kubectl  get  svc
+NAME     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+ashudb   ClusterIP   10.103.161.14   <none>        3306/TCP   33m
+❯ kubectl  expose deploy  ashuwebapp1 --type NodePort  --port 80 --dry-run=client -o yaml  >websvc.yml
 ❯ 
 ❯ 
+❯ kubectl  expose deploy  ashuwebapp1 --type NodePort  --port 80 --namespace ashu-jci --dry-run=client -o yaml  >websvc.yml
 ❯ 
-❯ docker  login  -u dockerashu
-Password: 
-Login Succeeded
-❯ docker push dockerashu/python:ashuv1
-The push refers to repository [docker.io/dockerashu/python]
-05d53f8a9c09: Pushed 
-785d08edd1b7: Pushed 
-d3c62c886f8b: Pushed 
-2653d992f4ef: Mounted from library/centos 
-ashuv1: digest: sha256:93f18c3510534b7398ab1e5b2a5636884836ff4d8dd8fd4992caf0f5b9186892 size: 1155
 
---
-❯ docker  logout
-Removing login credentials for https://index.docker.io/v1/
+❯ kubectl apply -f  websvc.yml
+service/ashuwebapp1 created
+❯ kubectl  get deploy,pod,svc
+NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/ashudb        1/1     1            1           46m
+deployment.apps/ashuwebapp1   1/1     1            1           3m13s
 
-About
-No description, website, or topics provided.
-Resources
- Readme
-Releases
-No releases published
-Packages
-No packages published
-© 2021 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Docs
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
+NAME                               READY   STATUS    RESTARTS   AGE
+pod/ashudb-778b46674-jxw4r         1/1     Running   0          46m
+pod/ashuwebapp1-66c9547dc5-72v4f   1/1     Running   0          3m13s
+
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/ashudb        ClusterIP   10.103.161.14   <none>        3306/TCP       35m
+service/ashuwebapp1   NodePort    10.99.134.217   <none>        80:31454/TCP   8s
+
+service account
+
+
+## K8s dashboard deployment
+❯ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.2.0/aio/deploy/recommended.yaml
+namespace/kubernetes-dashboard created
+serviceaccount/kubernetes-dashboard created
+service/kubernetes-dashboard created
+secret/kubernetes-dashboard-certs created
+secret/kubernetes-dashboard-csrf created
+secret/kubernetes-dashboard-key-holder created
+configmap/kubernetes-dashboard-settings created
+role.rbac.authorization.k8s.io/kubernetes-dashboard created
+clusterrole.rbac.authorization.k8s.io/kubernetes-dashboard created
+rolebinding.rbac.authorization.k8s.io/kubernetes-dashboard created
+clusterrolebinding.rbac.authorization.k8s.io/kubernetes-dashboard created
+deployment.apps/kubernetes-dashboard created
+service/dashboard-metrics-scraper created
+
+
+checking
+❯ kubectl  get  all -n kubernetes-dashboard
+NAME                                             READY   STATUS    RESTARTS   AGE
+pod/dashboard-metrics-scraper-856586f554-dccwc   1/1     Running   0          18s
+pod/kubernetes-dashboard-78c79f97b4-ftx4q        1/1     Running   0          19s
+
+NAME                                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/dashboard-metrics-scraper   ClusterIP   10.107.214.55   <none>        8000/TCP   20s
+service/kubernetes-dashboard        ClusterIP   10.108.33.170   <none>        443/TCP    27s
+
+NAME                                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/dashboard-metrics-scraper   1/1     1            1           19s
+deployment.apps/kubernetes-dashboard        1/1     1            1           20s
+
+NAME                                                   DESIRED   CURRENT   READY   AGE
+replicaset.apps/dashboard-metrics-scraper-856586f554   1         1         1       19s
+replicaset.apps/kubernetes-dashboard-78c79f97b4        1         1         1       20s
+❯ kubectl  get sa  -n kubernetes-dashboard
+NAME                   SECRETS   AGE
+default                1         45s
+kubernetes-dashboard   1         44s
+❯ kubectl  get secret   -n kubernetes-dashboard
+NAME                               TYPE                                  DATA   AGE
+default-token-6sdnw                kubernetes.io/service-account-token   3      55s
+kubernetes-dashboard-certs         Opaque                                0      52s
+kubernetes-dashboard-csrf          Opaque                                1      52s
+kubernetes-dashboard-key-holder    Opaque                                2      51s
+kubernetes-dashboard-token-kmd4f   kubernetes.io/service-account-token   3      54s
+
+change svc to nodeport
+❯ kubectl  edit   svc  kubernetes-dashboard       -n kubernetes-dashboard
+service/kubernetes-dashboard edited
+❯ kubectl  get  svc   -n kubernetes-dashboard
+NAME                        TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)         AGE
+dashboard-metrics-scraper   ClusterIP   10.107.214.55   <none>        8000/TCP        2m47s
+kubernetes-dashboard        NodePort    10.108.33.170   <none>        443:31336/TCP   2m54s
+
+░▒▓ ~ ······································
+
+dashboard summary
+10270  kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.2.0/aio/deploy/recommended.yaml
+10271  kubectl  get  ns
+10272  kubectl  get  all -n kubernetes-dashboard 
+10273  kubectl  get sa  -n kubernetes-dashboard 
+10274  kubectl  get secret   -n kubernetes-dashboard 
+10275  kubectl  get  po 
+10276  kubectl  get  po  -n kubernetes-dashboard 
+10277  kubectl  get  svc   -n kubernetes-dashboard 
+10278  kubectl  edit   svc  kubernetes-dashboard       -n kubernetes-dashboard 
+10279  kubectl  get  svc   -n kubernetes-dashboard 
+10280  kubectl  get no
+10281  kubectl  get  secret   -n kubernetes-dashboard 
+10282  kubectl  describe  secret   kubernetes-dashboard-token-kmd4f   -n kubernetes-dashboard 
+10283  kubectl  get  sa   -n kubernetes-dashboard 
